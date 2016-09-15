@@ -109,8 +109,8 @@ func (c *Channel) Authenticate() error {
 // Listen enters a loop and starts decoding IRC messages from the connected channel.
 // Decoded messages are pushed to the data channel.
 func (c *Channel) Listen(done <-chan int) error {
-	c.Connection.SetDeadline(time.Now().Add(120 * time.Second))
 	for {
+		c.Connection.SetDeadline(time.Now().Add(120 * time.Second))
 		select {
 		case <-done:
 			c.Connection.Close()
