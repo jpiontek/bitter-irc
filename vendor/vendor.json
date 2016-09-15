@@ -1,0 +1,17 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "EMhVcQrVn6FqYs17gx4S4n25hJ0=",
+			"path": "github.com/sorcix/irc",
+			"revision": "d007bfcbaef198e6c15c40e004d59ce4aac4fbff",
+			"revisionTime": "2016-05-13T14:27:31Z"
+		},
+		{
+			"path": "https://github.com/sorcix/irc.git",
+			"revision": ""
+		}
+	],
+	"rootPath": "github.com/jpiontek/bitter-irc"
+}
