@@ -9,8 +9,14 @@ import (
 	sirc "github.com/sorcix/irc"
 )
 
-// DefaultTwitchServer is the primary Twitch.tv IRC server.
-var DefaultTwitchServer = "irc.chat.twitch.tv:6667"
+// DefaultTwitchURI is the primary Twitch.tv IRC server.
+var DefaultTwitchURI = "irc.chat.twitch.tv"
+
+// DefaultTwitchPort is the primary Twitch.tv IRC server's port.
+var DefaultTwitchPort = "6667"
+
+// DefaultTwitchServer is the primary Twitch.tv IRC server including the PORT.
+var DefaultTwitchServer = DefaultTwitchURI + ":" + DefaultTwitchPort
 
 // Encoder represents a struct capable of encoding an IRC message.
 type Encoder interface {
@@ -37,7 +43,12 @@ type Channel struct {
 	Digesters  []Digester
 	reader     Decoder
 	writer     Encoder
-	data       chan Message
+	done       chan int
+}
+
+// ChannelWriter represents a writer capable of sending messages to a channel.
+type ChannelWriter interface {
+	SimpleMessage(message string) error
 }
 
 // Message is a decoded IRC message.
@@ -47,7 +58,7 @@ type Message struct {
 }
 
 // NewTwitchChannel creates an IRC channel with Twitch's default server and port.
-func NewTwitchChannel(channelName, username string, token string, digesters ...Digester) (*Channel, error) {
+func NewTwitchChannel(channelName, username, token string, digesters ...Digester) (*Channel, error) {
 	config := &Config{
 		ChannelName: channelName,
 		Username:    username,
@@ -68,11 +79,7 @@ func Connect(c *Config, digesters ...Digester) (*Channel, error) {
 	channel := &Channel{Config: c, Connection: conn, Digesters: digesters}
 	channel.reader = sirc.NewDecoder(conn)
 	channel.writer = sirc.NewEncoder(conn)
-
-	channel.data = make(chan Message)
-	for _, digester := range channel.Digesters {
-		go digester(channel.data)
-	}
+	channel.done = make(chan int)
 
 	return channel, nil
 }
@@ -82,24 +89,24 @@ func (c *Channel) SetWriter(e Encoder) {
 	c.writer = e
 }
 
-// Authenticate send the PASS and NICK to authenticate against the server. It also sends
+// Authenticate sends the PASS and NICK to authenticate against the server. It also sends
 // the JOIN message in order to join the specified channel in the configuration.
 func (c *Channel) Authenticate() error {
-	for _, m := range []*sirc.Message{
-		&sirc.Message{
+	for _, m := range []sirc.Message{
+		sirc.Message{
 			Command: sirc.PASS,
 			Params:  []string{fmt.Sprintf("oauth:%s", c.Config.OAuthToken)},
 		},
-		&sirc.Message{
+		sirc.Message{
 			Command: sirc.NICK,
 			Params:  []string{c.Config.Username},
 		},
-		&sirc.Message{
+		sirc.Message{
 			Command: sirc.JOIN,
 			Params:  []string{fmt.Sprintf("#%s", c.Config.ChannelName)},
 		},
 	} {
-		if err := c.writer.Encode(m); err != nil {
+		if err := c.writer.Encode(&m); err != nil {
 			return err
 		}
 	}
@@ -108,12 +115,13 @@ func (c *Channel) Authenticate() error {
 
 // Listen enters a loop and starts decoding IRC messages from the connected channel.
 // Decoded messages are pushed to the data channel.
-func (c *Channel) Listen(done <-chan int) error {
+func (c *Channel) Listen() error {
+	// Close the connection when finished.
+	defer c.Connection.Close()
 	for {
 		c.Connection.SetDeadline(time.Now().Add(120 * time.Second))
 		select {
-		case <-done:
-			c.Connection.Close()
+		case <-c.done:
 			return nil
 		default:
 			m, err := c.reader.Decode()
@@ -122,8 +130,37 @@ func (c *Channel) Listen(done <-chan int) error {
 			}
 			if m.Prefix != nil {
 				message := Message{Username: m.User, Content: m.Trailing}
-				c.data <- message
+				go c.handle(&message)
 			}
 		}
 	}
+}
+
+func (c *Channel) handle(m *Message) {
+	for _, d := range c.Digesters {
+		go d(*m, c)
+	}
+}
+
+// Close ends the current listener and closes the TCP connection.
+func (c *Channel) Close() {
+	c.done <- 1
+}
+
+// SimpleMessage writes a message to the channel.
+func (c *Channel) SimpleMessage(message string) error {
+	m := &sirc.Message{
+		Prefix: &sirc.Prefix{
+			Name: c.Config.Username,
+			User: c.Config.Username,
+			Host: DefaultTwitchURI,
+		},
+		Command:  sirc.PRIVMSG,
+		Params:   []string{fmt.Sprintf("#%s", c.Config.Username)},
+		Trailing: message,
+	}
+	if err := c.writer.Encode(m); err != nil {
+		return err
+	}
+	return nil
 }

@@ -86,9 +86,7 @@ func TestAuthenticate(t *testing.T) {
 		t.Error(err)
 	}
 
-	passCalled := false
-	nickCalled := false
-	joinCalled := false
+	var passCalled, nickCalled, joinCalled bool
 	handler := func(m *sirc.Message) {
 		switch m.Command {
 		case sirc.PASS:
