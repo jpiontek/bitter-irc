@@ -39,7 +39,8 @@ if err != nil {
 }
 ```
 
- ## Digesters
+
+## Digesters
 Digesters are simply functions used to handle incoming IRC messages. They have the signature:
 ```go
 type Digester func(m Message, channelWriter ChannelWriter)
