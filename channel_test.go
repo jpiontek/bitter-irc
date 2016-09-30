@@ -18,17 +18,8 @@ func (w *Writer) Encode(m *sirc.Message) error {
 	return nil
 }
 
-func TestDefaultTwitchServer(t *testing.T) {
-	if birc.DefaultTwitchServer != "irc.chat.twitch.tv:6667" {
-		t.Error(fmt.Errorf("invalid DefaultTwitchServer: %s", birc.DefaultTwitchServer))
-	}
-}
-
 func TestNewTwitchChannel(t *testing.T) {
-	c, err := birc.NewTwitchChannel("test", "foobar", "abc123")
-	if err != nil {
-		t.Error(err)
-	}
+	c := birc.NewTwitchChannel("test", "foobar", "abc123")
 
 	if c == nil {
 		t.Error(fmt.Errorf("channel was nil"))
@@ -65,10 +56,10 @@ func TestConnect(t *testing.T) {
 		t.Error(err)
 	}
 
-	c, err := birc.Connect(config, birc.Logger)
-	if err != nil {
-		t.Error(err)
-	}
+	var digesters = []birc.Digester{birc.Logger}
+
+	c := &birc.Channel{Config: config, Digesters: digesters}
+
 	if c == nil {
 		t.Error("Expected a channel")
 	}
@@ -81,10 +72,7 @@ func TestConnect(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	c, err := birc.NewTwitchChannel("test", "foobar", "abc123")
-	if err != nil {
-		t.Error(err)
-	}
+	c := birc.NewTwitchChannel("test", "foobar", "abc123")
 
 	var passCalled, nickCalled, joinCalled bool
 	handler := func(m *sirc.Message) {
