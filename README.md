@@ -59,13 +59,13 @@ func Logger(m Message, channelWriter ChannelWriter) {
 You can see the Logger digester just prints a formatted string to stdout if the message has a username and
 some sort of content.
 
-The ChannelWriter struct is an interface that represents a channel you can write to via the Write function.
+The ChannelWriter struct is an interface that represents a channel you can write to via the Send function.
 
 ```go
 // Simply checks if the content of someone's message is !command. If so then
 // the digester replies in the channel with "Executing command!".
 if m.Content == "!command" {
-  channelWriter.Write("Executing command!")
+  channelWriter.Send("Executing command!")
 }
 ```
 
