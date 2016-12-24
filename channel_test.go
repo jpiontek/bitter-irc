@@ -68,6 +68,16 @@ func TestConnect(t *testing.T) {
 		t.Error("Expected Logger digester")
 	}
 
+	err = c.Connect()
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = c.Authenticate()
+	if err != nil {
+		t.Error(err)
+	}
+
 	l.Close()
 }
 

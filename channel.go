@@ -36,7 +36,12 @@ type ChannelWriter interface {
 // occurred on that channel.
 type ChannelError struct {
 	Channel *Channel
-	Error   error
+	error   error
+}
+
+// Error returns a description of the error. Satisfies the Error interface.
+func (c *ChannelError) Error() string {
+	return c.error.Error()
 }
 
 // NewTwitchChannel creates an IRC channel with Twitch's default server and port.
@@ -124,11 +129,13 @@ func (c *Channel) Listen() *ChannelError {
 	// Close the connection when finished.
 	defer c.Connection.Close()
 
+	// quit channel is used to stop the pinging routine when disconnecting.
 	quit := make(chan bool, 1)
 	go c.startPinging(quit)
 
 	err := c.startReceiving()
 
+	// stop the pinging before exiting
 	quit <- true
 	return err
 }
@@ -142,7 +149,7 @@ func (c *Channel) startReceiving() *ChannelError {
 			c.Connection.SetDeadline(time.Now().Add(2 * time.Minute))
 			m, err := c.reader.Decode()
 			if err != nil {
-				return &ChannelError{Channel: c, Error: err}
+				return &ChannelError{Channel: c, error: err}
 			}
 			if m.Prefix != nil {
 				m := &Message{Name: m.Name, Username: m.User, Content: m.Trailing, Time: time.Now()}
@@ -153,6 +160,7 @@ func (c *Channel) startReceiving() *ChannelError {
 	}
 }
 
+// startPinging will send a 'heartbeat' ping to the server to maintain a connection.
 func (c *Channel) startPinging(quit chan bool) {
 	for {
 		select {
