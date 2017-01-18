@@ -32,7 +32,7 @@ type ChannelWriter interface {
 	Send(message string) error
 }
 
-// ChannelError isa struct consisting of a reference to a channel and an error that
+// ChannelError is a struct consisting of a reference to a channel and an error that
 // occurred on that channel.
 type ChannelError struct {
 	Channel *Channel
@@ -124,7 +124,7 @@ func (c *Channel) Send(message string) error {
 }
 
 // Listen enters a loop and starts decoding IRC messages from the connected channel.
-// Decoded messages are pushed to the data channel and ultimately the digesters to be handled.
+// Decoded messages are pushed to the digesters to be handled.
 func (c *Channel) Listen() *ChannelError {
 	// Close the connection when finished.
 	defer c.Connection.Close()
@@ -146,7 +146,7 @@ func (c *Channel) startReceiving() *ChannelError {
 		case <-c.done:
 			return nil
 		default:
-			c.Connection.SetDeadline(time.Now().Add(2 * time.Minute))
+			c.Connection.SetDeadline(time.Now().Add(4 * time.Minute))
 			m, err := c.reader.Decode()
 			if err != nil {
 				return &ChannelError{Channel: c, error: err}
