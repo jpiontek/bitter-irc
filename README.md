@@ -39,6 +39,7 @@ if err != nil {
 }
 ```
 
+To see a larger example application go [HERE](https://github.com/jpiontek/bitter-irc-example).
 
 ## Digesters
 Digesters are simply functions used to handle incoming IRC messages. They have the signature:
