@@ -10,6 +10,6 @@ import (
 func TestCustomLoggerIsDigester(t *testing.T) {
 	fn := birc.CustomLogger(nil)
 	if _, ok := interface{}(fn).(birc.Digester); !ok {
-		t.Error(fmt.Errorf("Logger does not implement Digester"))
+		t.Error(fmt.Errorf("CustomLogger does not implement Digester"))
 	}
 }
