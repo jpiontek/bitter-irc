@@ -1,6 +1,7 @@
 package birc_test
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"testing"
@@ -73,12 +74,123 @@ func TestConnect(t *testing.T) {
 		t.Error(err)
 	}
 
+	l.Close()
+}
+
+func TestConnectionError(t *testing.T) {
+	config := &birc.Config{
+		ChannelName: "test",
+		Username:    "foobar",
+		OAuthToken:  "abc123",
+		Server:      "127.0.0.1:4444",
+	}
+
+	// Create a listener on the same port as the test configuration
+	l, err := net.Listen("tcp", config.Server)
+	if err != nil {
+		t.Error(err)
+	}
+
+	c := &birc.Channel{Config: config}
+
+	if c == nil {
+		t.Error("Expected a channel")
+	}
+
+	err = c.Connect()
+	if err != nil {
+		t.Error(err)
+	}
+
 	err = c.Authenticate()
 	if err != nil {
 		t.Error(err)
 	}
 
+	ch := make(chan error, 1)
+	go func() {
+		err := c.Listen()
+		ch <- err
+	}()
+
+	// Close the listener to simulate losing connection to the server
+	go func() {
+		l.Close()
+	}()
+
+	select {
+	case err := <-ch:
+		// should get an error
+		if err == nil {
+			t.Error("expected error")
+		}
+	}
+
 	l.Close()
+}
+
+func TestPing(t *testing.T) {
+	config := &birc.Config{
+		ChannelName: "test",
+		Username:    "foobar",
+		OAuthToken:  "abc123",
+		Server:      "127.0.0.1:4444",
+	}
+
+	// Create a listener on the same port as the test configuration
+	l, err := net.Listen("tcp", config.Server)
+	if err != nil {
+		t.Error(err)
+	}
+
+	c := &birc.Channel{Config: config}
+
+	if c == nil {
+		t.Error("Expected a channel")
+	}
+
+	err = c.Connect()
+	if err != nil {
+		t.Error(err)
+	}
+
+	ch := make(chan string, 1)
+	connection, _ := l.Accept()
+	// start a go routine for the tcp server to listen to messages,
+	// when it receives one send it out to the ch channel
+	go func(conn net.Conn) {
+		for {
+			message, _, err := bufio.NewReader(conn).ReadLine()
+			if err != nil {
+				ch <- err.Error()
+			}
+			ch <- string(message)
+			break
+		}
+	}(connection)
+
+	// start a go routine to start the twich channel listening to the server
+	go func() {
+		err := c.Listen()
+		ch <- err.Error()
+	}()
+
+	// simulate the twitch server's occasional ping command
+	connection.Write([]byte("PING :tmi.twitch.tv\n"))
+
+	// wait to get the pong response from the channel sent to the server
+	for {
+		select {
+		case result := <-ch:
+			// if the result is not the expectd properly formed PONG response then fail
+			if result != ":foobar!foobar@irc.chat.twitch.tv PONG :tmi.twitch.tv" {
+				t.Errorf("expected pong command got %s", result)
+			}
+			break
+		}
+		break
+	}
+
 }
 
 func TestAuthenticate(t *testing.T) {

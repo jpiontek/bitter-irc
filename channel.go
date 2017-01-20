@@ -19,17 +19,17 @@ type Config struct {
 // Channel represents a connected and active IRC channel.
 type Channel struct {
 	Config     *Config
-	Connection net.Conn
 	Digesters  []Digester
+	connection net.Conn
 	reader     Decoder
 	writer     Encoder
 	done       chan *ChannelError
-	data       chan *Message
 }
 
 // ChannelWriter represents a writer capable of sending messages to a channel.
 type ChannelWriter interface {
 	Send(message string) error
+	SendCommand(command string, params []string, message string) error
 }
 
 // ChannelError is a struct consisting of a reference to a channel and an error that
@@ -63,10 +63,9 @@ func (c *Channel) Connect() error {
 		return err
 	}
 
-	c.Connection = conn
+	c.connection = conn
 	c.reader = sirc.NewDecoder(conn)
 	c.writer = sirc.NewEncoder(conn)
-	c.data = make(chan *Message)
 	c.done = make(chan *ChannelError)
 	return nil
 }
@@ -107,14 +106,19 @@ func (c *Channel) Disconnect() {
 
 // Send writes a message to the channel.
 func (c *Channel) Send(message string) error {
+	return c.SendCommand("PRIVMSG", []string{fmt.Sprintf("#%s", c.Config.ChannelName)}, message)
+}
+
+// SendCommand sends a command to the channel.
+func (c *Channel) SendCommand(command string, params []string, message string) error {
 	m := &sirc.Message{
 		Prefix: &sirc.Prefix{
 			Name: c.Config.Username,
 			User: c.Config.Username,
 			Host: DefaultTwitchURI,
 		},
-		Command:  sirc.PRIVMSG,
-		Params:   []string{fmt.Sprintf("#%s", c.Config.ChannelName)},
+		Command:  command,
+		Params:   params,
 		Trailing: message,
 	}
 	if err := c.writer.Encode(m); err != nil {
@@ -127,16 +131,10 @@ func (c *Channel) Send(message string) error {
 // Decoded messages are pushed to the digesters to be handled.
 func (c *Channel) Listen() *ChannelError {
 	// Close the connection when finished.
-	defer c.Connection.Close()
-
-	// quit channel is used to stop the pinging routine when disconnecting.
-	quit := make(chan bool, 1)
-	go c.startPinging(quit)
+	defer c.connection.Close()
 
 	err := c.startReceiving()
 
-	// stop the pinging before exiting
-	quit <- true
 	return err
 }
 
@@ -146,32 +144,31 @@ func (c *Channel) startReceiving() *ChannelError {
 		case <-c.done:
 			return nil
 		default:
-			c.Connection.SetDeadline(time.Now().Add(4 * time.Minute))
+			c.connection.SetDeadline(time.Now().Add(10 * time.Minute))
 			m, err := c.reader.Decode()
 			if err != nil {
 				return &ChannelError{Channel: c, error: err}
 			}
-			if m.Prefix != nil {
-				m := &Message{Name: m.Name, Username: m.User, Content: m.Trailing, Time: time.Now()}
-				go c.handle(m)
+			// If the message is a PING command from Twitch, respond with a PONG
+			// without pushing the message through to the digesters
+			if m.Command == "PING" {
+				c.SendCommand("PONG", []string{}, "tmi.twitch.tv")
+			} else {
+				message := &Message{
+					Content: m.Trailing,
+					Command: m.Command,
+					Params:  m.Params,
+					Time:    time.Now(),
+				}
+				if m.Prefix != nil {
+					message.Name = m.Name
+					message.Username = m.User
+					message.Content = m.Trailing
+				}
+				c.handle(message)
 			}
 		}
 
-	}
-}
-
-// startPinging will send a 'heartbeat' ping to the server to maintain a connection.
-func (c *Channel) startPinging(quit chan bool) {
-	for {
-		select {
-		case <-quit:
-			return
-		case <-time.After(180 * time.Second):
-			ping := sirc.Message{
-				Command: sirc.PING,
-			}
-			c.writer.Encode(&ping)
-		}
 	}
 }
 
