@@ -79,7 +79,7 @@ if m.Content == "!command" {
 The ChannelWriter also supports SendMessage. You can send any message struct
 via this function.
 
-``go
+```go
 message := &birc.Message{
   Command: "PONG",
   Content: "tmi.twitch.tv",
@@ -100,7 +100,7 @@ type Message struct {
 	Name     string
 	Username string
 	Content  string
-	Command  string
+        Command  string
         Host     string
 	Params   []string
 	Time     time.Time
