@@ -18,7 +18,7 @@ type Message struct {
 }
 
 // Encode converts a Message struct into an IRC messsage
-func (m *Message) Encode() *sirc.Message {
+func (m *Message) prepare() *sirc.Message {
 	message := &sirc.Message{
 		Prefix: &sirc.Prefix{
 			Name: m.Name,

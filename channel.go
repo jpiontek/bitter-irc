@@ -134,7 +134,7 @@ func (c *Channel) Send(content string) error {
 }
 
 func (c *Channel) SendMessage(message *Message) error {
-	if err := c.writer.Encode(message.Encode()); err != nil {
+	if err := c.writer.Encode(message.prepare()); err != nil {
 		return err
 	}
 	return nil
