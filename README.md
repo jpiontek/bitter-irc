@@ -3,6 +3,12 @@
 Bitter IRC is a streamlined IRC library specifically designed for Twitch's IRC servers.
 To see an example application go [here](https://github.com/jpiontek/bitter-irc-example).
 
+## Features
+
+* Automatic PONG messages to keep connections alive.
+* Automatic handling of RECONNECT events.
+* Scalable digester message handling.
+
 ## Example
 ```go
 import "github.com/jpiontek/bitter-irc"
@@ -13,11 +19,11 @@ oauthKey := "my_oauth_key"
 username := "fred_bot"
 // The channel you'd like to listen to
 channel := "awesome_streamer"
+// Use TLS
+tls := true
 
 // Create a new channel by supplying the necessary info and the Logger digester.  
-// In this example we only pass in the Logger digester, but any number 
-// of digesters could be passed in here.
-channel := birc.NewTwitchChannel(channel, username, oauthKey, birc.Logger)
+channel := birc.NewTwitchChannel(channel, username, oauthKey, tls, birc.Logger)
 
 // Connect estblishes the underlying TCP connection
 err := channel.Connect()
@@ -43,11 +49,11 @@ if err != nil {
 ## Digesters
 Digesters are simply functions used to handle incoming IRC messages. They have the signature:
 ```go
-type Digester func(m Message, channelWriter ChannelWriter)
+type Digester func(m Message, c ChannelWriter)
 ```
 
 You can pass in any number of digesters to the NewTwitchChannel function. They **MUST** be threadsafe as
-they will be called by multiple threads. An example of the Logger digester:
+they will be called by multiple go routines. An example of the Logger digester:
 
 ```go
 func Logger(m Message, w ChannelWriter) {
@@ -70,6 +76,24 @@ if m.Content == "!command" {
 }
 ```
 
+The ChannelWriter also supports SendMessage. You can send any message struct
+via this function.
+
+``go
+message := &birc.Message{
+  Command: "PONG",
+  Content: "tmi.twitch.tv",
+}
+
+err := w.SendMessage(message)
+```
+
+The ChannelWriter also support retrieving the Channel's configuration.
+
+```go
+config := ChannelWriter.GetConfig()
+```
+
 The Message struct passed into each digester:
 ```go
 type Message struct {
@@ -77,6 +101,7 @@ type Message struct {
 	Username string
 	Content  string
 	Command  string
+        Host     string
 	Params   []string
 	Time     time.Time
 }

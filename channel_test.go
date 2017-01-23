@@ -20,7 +20,7 @@ func (w *Writer) Encode(m *sirc.Message) error {
 }
 
 func TestNewTwitchChannel(t *testing.T) {
-	c := birc.NewTwitchChannel("test", "foobar", "abc123")
+	c := birc.NewTwitchChannel("test", "foobar", "abc123", false)
 
 	if c == nil {
 		t.Error(fmt.Errorf("channel was nil"))
@@ -179,22 +179,14 @@ func TestPing(t *testing.T) {
 	connection.Write([]byte("PING :tmi.twitch.tv\n"))
 
 	// wait to get the pong response from the channel sent to the server
-	for {
-		select {
-		case result := <-ch:
-			// if the result is not the expectd properly formed PONG response then fail
-			if result != ":foobar!foobar@irc.chat.twitch.tv PONG :tmi.twitch.tv" {
-				t.Errorf("expected pong command got %s", result)
-			}
-			break
-		}
-		break
+	result := <-ch
+	if result != birc.PongMessage().Encode().String() {
+		t.Errorf("expected pong command got %s", result)
 	}
-
 }
 
 func TestAuthenticate(t *testing.T) {
-	c := birc.NewTwitchChannel("test", "foobar", "abc123")
+	c := birc.NewTwitchChannel("test", "foobar", "abc123", false)
 
 	var passCalled, nickCalled, joinCalled bool
 	handler := func(m *sirc.Message) {
