@@ -17,7 +17,7 @@ type Message struct {
 	Time     time.Time
 }
 
-// Encode converts a Message struct into an IRC messsage
+// prepare converts a Message struct into an IRC messsage
 func (m *Message) prepare() *sirc.Message {
 	message := &sirc.Message{
 		Prefix: &sirc.Prefix{
