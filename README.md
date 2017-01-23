@@ -91,7 +91,7 @@ err := w.SendMessage(message)
 The ChannelWriter also support retrieving the Channel's configuration.
 
 ```go
-config := ChannelWriter.GetConfig()
+config := w.GetConfig()
 ```
 
 The Message struct passed into each digester:
