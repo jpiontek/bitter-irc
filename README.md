@@ -3,12 +3,6 @@
 Bitter IRC is a streamlined IRC library specifically designed for Twitch's IRC servers.
 To see an example application go [here](https://github.com/jpiontek/bitter-irc-example).
 
-## Features
-
-* Automatic PONG messages to keep connections alive.
-* Automatic handling of RECONNECT events.
-* Scalable digester message handling.
-
 ## Example
 ```go
 import "github.com/jpiontek/bitter-irc"
