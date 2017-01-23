@@ -97,13 +97,13 @@ config := ChannelWriter.GetConfig()
 The Message struct passed into each digester:
 ```go
 type Message struct {
-	Name     string
-	Username string
-	Content  string
-        Command  string
-        Host     string
-	Params   []string
-	Time     time.Time
+  Name     string	
+  Username string
+  Content  string
+  Command  string
+  Host     string
+  Params   []string
+  Time     time.Time
 }
 ```
 
