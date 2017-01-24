@@ -180,7 +180,7 @@ func TestPing(t *testing.T) {
 
 	// wait to get the pong response from the channel sent to the server
 	result := <-ch
-	if result != birc.PongMessage().Encode().String() {
+	if result != "PONG :tmi.twitch.tv" {
 		t.Errorf("expected pong command got %s", result)
 	}
 }

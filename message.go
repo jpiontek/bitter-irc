@@ -20,11 +20,6 @@ type Message struct {
 // prepare converts a Message struct into an IRC messsage
 func (m *Message) prepare() *sirc.Message {
 	message := &sirc.Message{
-		Prefix: &sirc.Prefix{
-			Name: m.Name,
-			User: m.Username,
-			Host: m.Host,
-		},
 		Command:  m.Command,
 		Params:   m.Params,
 		Trailing: m.Content,
