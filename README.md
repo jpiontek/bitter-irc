@@ -12,12 +12,12 @@ oauthKey := "my_oauth_key"
 // Your account username
 username := "fred_bot"
 // The channel you'd like to listen to
-channel := "awesome_streamer"
+channelName := "awesome_streamer"
 // Use TLS
 tls := true
 
-// Create a new channel by supplying the necessary info and the Logger digester.  
-channel := birc.NewTwitchChannel(channel, username, oauthKey, tls, birc.Logger)
+// Create a new channel by supplying the necessary info and the Logger digester.
+channel := birc.NewTwitchChannel(channelName, username, oauthKey, tls, birc.Logger)
 
 // Connect estblishes the underlying TCP connection
 err := channel.Connect()
@@ -82,7 +82,7 @@ message := &birc.Message{
 err := w.SendMessage(message)
 ```
 
-The ChannelWriter also support retrieving the Channel's configuration.
+The ChannelWriter also supports retrieving the Channel's configuration.
 
 ```go
 config := w.GetConfig()
@@ -91,7 +91,7 @@ config := w.GetConfig()
 The Message struct passed into each digester:
 ```go
 type Message struct {
-  Name     string	
+  Name     string
   Username string
   Content  string
   Command  string
