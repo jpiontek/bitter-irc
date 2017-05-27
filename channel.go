@@ -35,6 +35,7 @@ type ChannelWriter interface {
 	GetConfig() Config
 }
 
+// GetConfig returns the Channel's configuration.
 func (c *Channel) GetConfig() Config {
 	return *c.Config
 }
@@ -133,6 +134,7 @@ func (c *Channel) Send(content string) error {
 	})
 }
 
+// SendMessage sends the supplied message to the Channel.
 func (c *Channel) SendMessage(message *Message) error {
 	if err := c.writer.Encode(message.prepare()); err != nil {
 		return err
@@ -193,6 +195,7 @@ func (c *Channel) startReceiving() error {
 	}
 }
 
+// Reconnect reconnects and reauthenticates the Channel.
 func (c *Channel) Reconnect() error {
 	err := c.Connect()
 	if err != nil {
